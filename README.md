@@ -1,214 +1,204 @@
-# Stripe Checkout Example
+# MTV Tech Solutions
 
-A complete, working example of Stripe Checkout integration with Node.js + Express backend.
+A modern, production-ready Next.js website for MTV Tech Solutions - your trusted partner for AI-powered technology solutions.
 
-## Features
+## 🚀 Services
 
-- ✅ Stripe Checkout (hosted page) for secure payments
-- ✅ Express.js backend with webhook handling
-- ✅ Static frontend served from `/public`
-- ✅ Environment variable configuration
-- ✅ Webhook signature verification
-- ✅ Test mode ready
+- **Computer Repair** - Expert hardware diagnostics and repairs
+- **Tech Support** - 24/7 technical support for businesses and individuals
+- **Cybersecurity** - Advanced threat protection and security audits
+- **Web Design** - Modern, responsive web design and development
 
-## Setup
+## 🛠️ Tech Stack
 
-1. **Install dependencies:**
+- **Framework**: Next.js 14 with TypeScript
+- **Styling**: Tailwind CSS with custom dark theme
+- **Email**: Nodemailer for contact form functionality
+- **Deployment**: Vercel/Netlify ready
+- **Code Quality**: ESLint + Prettier
+
+## 🎨 Design Features
+
+- **Dark Theme**: Modern black/grey background with neon green/blue accents
+- **Responsive Design**: Mobile-first approach with seamless desktop experience
+- **Animations**: Smooth transitions and hover effects
+- **Accessibility**: WCAG compliant with semantic HTML
+- **Performance**: Optimized for speed and SEO
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js 18+ 
+- npm 8+
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/slats55/TECHSOLUTIONS.git
+   cd TECHSOLUTIONS
+   ```
+
+2. **Install dependencies**
    ```bash
    npm install
    ```
 
-2. **Configure environment:**
+3. **Set up environment variables**
    ```bash
-   cp .env.example .env
+   cp env.example .env.local
    ```
    
-   Fill in your Stripe keys from the [Stripe Dashboard](https://dashboard.stripe.com):
-   - `STRIPE_SECRET_KEY`: Your secret key (starts with `sk_test_` for test mode)
-   - `STRIPE_PUBLISHABLE_KEY`: Your publishable key (starts with `pk_test_` for test mode)
-   - `STRIPE_WEBHOOK_SECRET`: Webhook endpoint secret (starts with `whsec_`)
-   - `YOUR_DOMAIN`: Your domain (use `http://localhost:3000` for local development)
+   Edit `.env.local` and add your email credentials:
+   ```env
+   EMAIL_USER=yourgmail@gmail.com
+   EMAIL_PASS=your_app_password_here
+   ```
 
-3. **Run the server:**
+4. **Run the development server**
    ```bash
    npm run dev
    ```
 
-4. **Visit the app:**
-   Open `http://localhost:3000` in your browser
+5. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
 
-## Testing Webhooks Locally
+## 📧 Email Setup
 
-### Option 1: Using ngrok (Recommended)
+To enable the contact form functionality:
 
-1. **Install ngrok:**
-   ```bash
-   # Download from https://ngrok.com/download
-   # Or install via package manager
+1. **Gmail Setup**:
+   - Enable 2-factor authentication on your Gmail account
+   - Generate an App Password: [Google App Passwords](https://myaccount.google.com/apppasswords)
+   - Use the App Password (not your regular password) in `.env.local`
+
+2. **Environment Variables**:
+   ```env
+   EMAIL_USER=mtvrentals845@gmail.com
+   EMAIL_PASS=your_16_character_app_password
    ```
 
-2. **Start ngrok:**
+## 🚀 Deployment
+
+### Vercel (Recommended)
+
+1. **Connect your repository** to Vercel
+2. **Add environment variables** in Vercel dashboard
+3. **Deploy** - automatic deployments on push to main
+
+### Netlify
+
+1. **Connect your repository** to Netlify
+2. **Build settings**:
+   - Build command: `npm run build`
+   - Publish directory: `.next`
+3. **Add environment variables** in Netlify dashboard
+
+### cPanel/Shared Hosting
+
+1. **Build the project**:
    ```bash
-   ngrok http 3000
+   npm run build
+   npm run export
    ```
 
-3. **Configure webhook in Stripe Dashboard:**
-   - Go to [Stripe Dashboard > Webhooks](https://dashboard.stripe.com/webhooks)
-   - Click "Add endpoint"
-   - URL: `https://your-ngrok-id.ngrok.io/webhook`
-   - Select events: `checkout.session.completed`
-   - Copy the webhook signing secret to your `.env` file
+2. **Upload** the `out` folder to your hosting provider
+3. **Configure** email settings on your server
 
-### Option 2: Using Stripe CLI
-
-1. **Install Stripe CLI:**
-   ```bash
-   # Download from https://stripe.com/docs/stripe-cli
-   ```
-
-2. **Login and forward webhooks:**
-   ```bash
-   stripe login
-   stripe listen --forward-to localhost:3000/webhook
-   ```
-
-3. **Copy the webhook secret** from the CLI output to your `.env` file
-
-## Testing Payments
-
-### Test Cards
-
-Use these test card numbers in **test mode only**:
-
-- **Success:** `4242 4242 4242 4242`
-- **Decline:** `4000 0000 0000 0002`
-- **Requires authentication:** `4000 0025 0000 3155`
-
-Use any future expiration date (e.g., `12/34`) and any 3-digit CVC.
-
-### Test the API
-
-**Create a checkout session:**
-```bash
-curl -X POST http://localhost:3000/create-checkout-session \
-  -H "Content-Type: application/json" \
-  -d '{
-    "items": [
-      {
-        "name": "T-shirt",
-        "unit_amount": 2000,
-        "quantity": 1
-      }
-    ]
-  }'
-```
-
-**JavaScript example:**
-```javascript
-const response = await fetch('/create-checkout-session', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    items: [{ name: 'T-shirt', unit_amount: 2000, quantity: 1 }]
-  })
-});
-const session = await response.json();
-```
-
-## Project Structure
+## 📁 Project Structure
 
 ```
-├── package.json          # Dependencies and scripts
-├── server.js             # Express server with Stripe integration
-├── .env.example          # Environment variables template
-├── .env                  # Your actual environment variables (create this)
-├── public/
-│   ├── index.html        # Product page with checkout button
-│   ├── checkout.js       # Frontend checkout logic
-│   ├── success.html      # Payment success page
-│   └── cancel.html       # Payment cancellation page
-└── README.md             # This file
+TECHSOLUTIONS/
+├── components/          # React components
+│   ├── Hero.tsx        # Landing page hero section
+│   ├── Services.tsx    # Services showcase
+│   ├── Footer.tsx      # Site footer
+│   └── Navbar.tsx      # Navigation bar
+├── pages/              # Next.js pages
+│   ├── api/           # API routes
+│   │   └── contact.ts # Contact form handler
+│   ├── index.tsx      # Home page
+│   ├── contact.tsx    # Contact page
+│   └── _app.tsx       # App wrapper
+├── styles/            # Global styles
+│   └── globals.css    # Tailwind + custom CSS
+├── public/            # Static assets
+└── package.json       # Dependencies & scripts
 ```
 
-## API Endpoints
+## 🛠️ Available Scripts
 
-### POST `/create-checkout-session`
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+- `npm run type-check` - Run TypeScript checks
+- `npm run format` - Format code with Prettier
 
-Creates a Stripe Checkout Session.
+## 🎯 Features
 
-**Request body:**
-```json
-{
-  "items": [
-    {
-      "name": "Product Name",
-      "unit_amount": 2000,
-      "quantity": 1
-    }
-  ]
+### Home Page
+- **Hero Section** with compelling call-to-action
+- **Services Overview** with detailed descriptions
+- **Statistics** showcasing company achievements
+- **Responsive Design** for all devices
+
+### Contact Page
+- **Contact Form** with validation
+- **Email Integration** using Nodemailer
+- **Contact Information** with multiple touchpoints
+- **Success/Error Handling** with user feedback
+
+### Technical Features
+- **TypeScript** for type safety
+- **ESLint + Prettier** for code quality
+- **Tailwind CSS** for styling
+- **Dark Theme** with neon accents
+- **SEO Optimized** with meta tags
+- **Performance Optimized** with Next.js
+
+## 🔧 Customization
+
+### Colors
+Edit `tailwind.config.ts` to customize the color scheme:
+```typescript
+colors: {
+  primary: "hsl(142 76% 36%)", // Neon green
+  accent: "hsl(199 89% 48%)",  // Neon blue
+  // ... other colors
 }
 ```
 
-**Response:**
-```json
-{
-  "id": "cs_test_...",
-  "url": "https://checkout.stripe.com/..."
-}
-```
+### Content
+- Update company information in components
+- Modify services in `Services.tsx`
+- Change contact details in `Footer.tsx` and `contact.tsx`
 
-### POST `/webhook`
+### Styling
+- Global styles in `styles/globals.css`
+- Component-specific styles using Tailwind classes
+- Custom animations and effects
 
-Handles Stripe webhooks with signature verification.
+## 📞 Support
 
-**Headers:**
-- `stripe-signature`: Stripe webhook signature
+For technical support or questions:
+- **Email**: mtvrentals845@gmail.com
+- **Available**: 24/7 emergency support
+- **Response Time**: 2-4 hours during business hours
 
-**Body:** Raw webhook payload (application/json)
+## 📄 License
 
-## Security Notes
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-- ✅ **Use HTTPS in production** - Stripe requires HTTPS for live payments
-- ✅ **Store keys in environment variables** - Never commit secrets to version control
-- ✅ **Verify webhook signatures** - Always verify webhook authenticity
-- ✅ **Don't log secret keys** - Keep sensitive data out of logs
-- ✅ **Use test mode for development** - Test with `sk_test_` and `pk_test_` keys
+## 🤝 Contributing
 
-## Production Deployment
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-1. **Set up HTTPS** (required for live payments)
-2. **Use live Stripe keys** (`sk_live_` and `pk_live_`)
-3. **Configure production webhook URL** in Stripe Dashboard
-4. **Set environment variables** on your hosting platform
-5. **Test thoroughly** with small amounts first
+---
 
-## Troubleshooting
-
-**"Webhook signature verification failed"**
-- Check that `STRIPE_WEBHOOK_SECRET` matches your webhook endpoint secret
-- Ensure webhook URL is correct and accessible
-
-**"Invalid API key"**
-- Verify your Stripe keys are correct
-- Make sure you're using test keys in test mode
-
-**"Payment method not supported"**
-- Check that `payment_method_types: ['card']` is set
-- Verify your Stripe account supports the payment method
-
-## Next Steps
-
-- **Add database persistence** for orders (see TODO comments in `server.js`)
-- **Implement user authentication** for order history
-- **Add email receipts** using Stripe's receipt emails or your own service
-- **Handle more webhook events** like `payment_intent.succeeded`
-- **Add inventory management** and stock checking
-- **Implement subscription payments** using Stripe Subscriptions
-
-## Resources
-
-- [Stripe Checkout Documentation](https://stripe.com/docs/checkout)
-- [Stripe Webhooks Guide](https://stripe.com/docs/webhooks)
-- [Stripe Test Cards](https://stripe.com/docs/testing)
-- [Stripe CLI Documentation](https://stripe.com/docs/stripe-cli)
-
+**MTV Tech Solutions** - AI-Powered Technology Solutions for Modern Businesses

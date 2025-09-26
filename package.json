@@ -1,32 +1,49 @@
 {
-  "name": "mtvtechsolutions-stripe-checkout",
+  "name": "mtv-tech-solutions",
   "version": "1.0.0",
-  "description": "Stripe Checkout integration for MTV Tech Solutions",
-  "main": "server.js",
+  "description": "MTV Tech Solutions - AI-powered Computer Repair, Tech Support, Cybersecurity, and Web Design",
+  "private": true,
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
-    "build": "echo 'No build step required for this project'",
-    "test": "echo 'No tests specified'"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "@types/nodemailer": "^6.4.0",
+    "lucide-react": "^0.544.0",
+    "next": "^14.0.0",
+    "nodemailer": "^6.9.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "autoprefixer": "^10.4.0",
+    "eslint": "^8.0.0",
+    "eslint-config-next": "^14.0.0",
+    "postcss": "^8.4.0",
+    "prettier": "^3.0.0",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5.0.0"
   },
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
   },
-  "dependencies": {
-    "express": "^4.18.2",
-    "stripe": "^12.0.0",
-    "dotenv": "^16.0.0"
-  },
-  "devDependencies": {
-    "nodemon": "^2.0.22"
-  },
   "keywords": [
-    "stripe",
-    "checkout",
-    "payment",
-    "express",
-    "nodejs"
+    "tech-support",
+    "computer-repair",
+    "cybersecurity",
+    "web-design",
+    "ai-powered",
+    "nextjs",
+    "react"
   ],
   "author": "MTV Tech Solutions",
   "license": "MIT"
