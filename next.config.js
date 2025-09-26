@@ -6,6 +6,11 @@ const nextConfig = {
   env: {
     EMAIL_USER: process.env.EMAIL_USER,
     EMAIL_PASS: process.env.EMAIL_PASS,
+    STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY,
+  },
+  // Stripe webhook requires raw body parsing
+  experimental: {
+    serverComponentsExternalPackages: ['stripe'],
   },
 }
 

@@ -79,6 +79,65 @@ To enable the contact form functionality:
    EMAIL_PASS=your_16_character_app_password
    ```
 
+## 💳 Stripe Integration Setup
+
+MTV Tech Solutions includes full Stripe payment integration for service bookings:
+
+### 1. Stripe Account Setup
+
+1. **Create Stripe Account**: [https://dashboard.stripe.com/register](https://dashboard.stripe.com/register)
+2. **Get API Keys**: Go to [API Keys](https://dashboard.stripe.com/apikeys)
+   - Copy your **Publishable key** (starts with `pk_test_`)
+   - Copy your **Secret key** (starts with `sk_test_`)
+
+### 2. Environment Configuration
+
+Add these variables to your `.env.local` file:
+
+```env
+# Stripe Configuration
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key_here
+STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key_here
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
+```
+
+### 3. Webhook Setup (Production)
+
+1. **Create Webhook Endpoint**:
+   - Go to [Stripe Webhooks](https://dashboard.stripe.com/webhooks)
+   - Click "Add endpoint"
+   - URL: `https://yourdomain.com/api/webhook`
+   - Events: Select `checkout.session.completed`, `payment_intent.succeeded`, `payment_intent.payment_failed`
+
+2. **Get Webhook Secret**:
+   - Click on your webhook endpoint
+   - Copy the "Signing secret" (starts with `whsec_`)
+   - Add it to your `.env.local` as `STRIPE_WEBHOOK_SECRET`
+
+### 4. Local Development with Webhooks
+
+For local testing of webhooks:
+
+```bash
+# Install Stripe CLI
+npm install -g stripe-cli
+
+# Login to Stripe
+stripe login
+
+# Forward webhooks to local server
+stripe listen --forward-to localhost:3000/api/webhook
+```
+
+### 5. Test Payment
+
+Use Stripe's test card numbers:
+- **Success**: `4242 4242 4242 4242`
+- **Decline**: `4000 0000 0000 0002`
+- **Requires Authentication**: `4000 0025 0000 3155`
+
+Any future date, any 3-digit CVC, and any postal code.
+
 ## 🚀 Deployment
 
 ### Vercel (Recommended)
@@ -140,9 +199,16 @@ TECHSOLUTIONS/
 
 ### Home Page
 - **Hero Section** with compelling call-to-action
-- **Services Overview** with detailed descriptions
+- **Services Overview** with detailed descriptions and pricing
 - **Statistics** showcasing company achievements
 - **Responsive Design** for all devices
+
+### Services & Payments
+- **Stripe Integration** for secure online payments
+- **Service Booking** with instant checkout
+- **Payment Success/Cancel** pages with user guidance
+- **Webhook Support** for real-time payment updates
+- **Test Mode** ready with Stripe test cards
 
 ### Contact Page
 - **Contact Form** with validation
@@ -157,6 +223,8 @@ TECHSOLUTIONS/
 - **Dark Theme** with neon accents
 - **SEO Optimized** with meta tags
 - **Performance Optimized** with Next.js
+- **Secure Payments** with Stripe
+- **Webhook Processing** for payment events
 
 ## 🔧 Customization
 
