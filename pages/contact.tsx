@@ -11,7 +11,7 @@ export default function Contact() {
     message: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | { errorCode: number; message: string }>('idle');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -27,7 +27,11 @@ export default function Contact() {
     setSubmitStatus('idle');
 
     try {
-      const response = await fetch('/api/contact', {
+      // Build proper API URL for both local and production
+      const base = typeof window !== "undefined" ? window.location.origin : process.env.NEXT_PUBLIC_SITE_URL || '';
+      const apiUrl = `${base}/api/contact`;
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -35,15 +39,34 @@ export default function Contact() {
         body: JSON.stringify(formData),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
         setSubmitStatus('success');
         setFormData({ name: '', email: '', message: '' });
       } else {
-        setSubmitStatus('error');
+        // Handle specific error codes with user-friendly messages
+        let errorMessage = 'Something went wrong. Please try again.';
+        
+        if (response.status === 400) {
+          errorMessage = 'Please check your name, email, and message and try again.';
+        } else if (response.status === 429) {
+          errorMessage = 'Too many requests. Please wait a few minutes before trying again.';
+        } else if (response.status === 500) {
+          errorMessage = 'Email service is temporarily unavailable — we\'re fixing it.';
+        }
+        
+        setSubmitStatus({
+          errorCode: response.status,
+          message: data.error || errorMessage
+        });
       }
     } catch (error) {
       console.error('Error submitting form:', error);
-      setSubmitStatus('error');
+      setSubmitStatus({
+        errorCode: 0,
+        message: 'Network error. Please check your connection and try again.'
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -176,10 +199,10 @@ export default function Contact() {
                     </div>
                   )}
 
-                  {submitStatus === 'error' && (
+                  {typeof submitStatus === 'object' && submitStatus.errorCode && (
                     <div className="flex items-center space-x-2 text-red-500 bg-red-500/10 p-3 rounded-lg">
                       <AlertCircle className="w-5 h-5" />
-                      <span>Failed to send message. Please try again or contact us directly.</span>
+                      <span>{submitStatus.message}</span>
                     </div>
                   )}
 

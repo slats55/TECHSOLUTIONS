@@ -1,5 +1,8 @@
+'use client';
+
 import { useState } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { 
   Wrench, 
   Shield, 
@@ -136,18 +139,40 @@ const Services = () => {
   };
 
   return (
-    <section id="services" className="py-20 bg-card/50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="services" className="py-20 cinematic-gradient relative overflow-hidden">
+      {/* Background elements */}
+      <div className="absolute inset-0">
+        <motion.div 
+          className="absolute top-0 right-0 w-96 h-96 bg-brand-accent/10 rounded-full blur-3xl"
+          animate={{ 
+            scale: [1, 1.1, 1],
+            opacity: [0.1, 0.3, 0.1]
+          }}
+          transition={{ 
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Section Header */}
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            <span className="gradient-text">Our Services</span>
+        <motion.div 
+          className="text-center mb-16"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+        >
+          <h2 className="text-4xl md:text-6xl font-bold mb-6">
+            <span className="gradient-text glow-text">Our Services</span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          <p className="text-xl md:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
             Comprehensive technology solutions designed to keep your business running 
             at peak performance with cutting-edge AI-powered tools and expert support.
           </p>
-        </div>
+        </motion.div>
 
         {/* Services Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
@@ -156,23 +181,26 @@ const Services = () => {
             const isLoading = loadingService === service.id;
             
             return (
-              <div
+              <motion.div
                 key={service.id}
-                className={`group relative bg-card border ${service.popular ? 'border-primary' : 'border-border'} rounded-xl p-6 hover:border-primary/50 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-primary/10`}
-                style={{ animationDelay: `${index * 100}ms` }}
+                className={`group relative glass border ${service.popular ? 'border-brand-accent' : 'border-border'} rounded-2xl p-6 card-hover depth`}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true }}
               >
                 {/* Popular Badge */}
                 {service.popular && (
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-semibold">
+                    <span className="bg-brand-accent text-brand-obsidian px-4 py-2 rounded-full text-xs font-bold glow-green">
                       Most Popular
                     </span>
                   </div>
                 )}
 
                 {/* Icon */}
-                <div className={`w-16 h-16 bg-gradient-to-r ${service.color} rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                  <IconComponent className="w-8 h-8 text-white" />
+                <div className={`w-20 h-20 bg-gradient-to-br ${service.color} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-all duration-300 shadow-glow-green`}>
+                  <IconComponent className="w-10 h-10 text-white" />
                 </div>
 
                 {/* Content */}
@@ -203,24 +231,24 @@ const Services = () => {
                 <button
                   onClick={() => handleCheckout(service)}
                   disabled={isLoading}
-                  className={`w-full bg-gradient-to-r ${service.color} text-white py-3 px-4 rounded-lg font-semibold hover:opacity-90 transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+                  className={`w-full bg-gradient-to-r ${service.color} text-white py-4 px-6 rounded-xl font-bold hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-cinematic hover:shadow-glow-green`}
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-5 h-5 animate-spin" />
                       <span>Processing...</span>
                     </>
                   ) : (
                     <>
-                      <CreditCard className="w-4 h-4" />
+                      <CreditCard className="w-5 h-5" />
                       <span>Get Started</span>
                     </>
                   )}
                 </button>
 
-                {/* Hover effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-              </div>
+                {/* Cinematic hover effect */}
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-accent/5 to-brand-cyan/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+              </motion.div>
             );
           })}
         </div>

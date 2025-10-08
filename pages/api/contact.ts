@@ -1,15 +1,145 @@
+import { z } from 'zod';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import nodemailer from 'nodemailer';
 
-interface ContactFormData {
-  name: string;
-  email: string;
-  message: string;
-}
+// Zod schema for request validation
+const BodySchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name must be less than 100 characters'),
+  email: z.string().email('Invalid email format'),
+  message: z.string().min(10, 'Message must be at least 10 characters').max(5000, 'Message must be less than 5000 characters'),
+});
 
 interface ApiResponse {
-  success: boolean;
-  message: string;
+  ok: boolean;
+  message?: string;
+  error?: string;
+}
+
+// Simple in-memory rate limiter for serverless environments
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 10 * 60 * 1000; // 10 minutes
+const RATE_LIMIT_MAX_REQUESTS = 5;
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const clientData = rateLimitMap.get(ip);
+
+  if (!clientData) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+
+  if (now > clientData.resetTime) {
+    // Reset the window
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+
+  if (clientData.count >= RATE_LIMIT_MAX_REQUESTS) {
+    return false;
+  }
+
+  clientData.count++;
+  return true;
+}
+
+function getClientIP(req: NextApiRequest): string {
+  const forwarded = req.headers['x-forwarded-for'];
+  const ip = forwarded ? (Array.isArray(forwarded) ? forwarded[0] : forwarded.split(',')[0]) : req.connection.remoteAddress;
+  return ip || 'unknown';
+}
+
+async function sendEmailWithResend(name: string, email: string, message: string): Promise<void> {
+  // Dynamic import to avoid issues if resend is not installed
+  const { Resend } = await import('resend');
+  const resend = new Resend(process.env.RESEND_API_KEY!);
+  
+  const fromEmail = process.env.RESEND_FROM || 'noreply@your-domain.com';
+  const toEmail = process.env.CONTACT_TO || 'mtvrentals845@gmail.com';
+
+  await resend.emails.send({
+    from: fromEmail,
+    to: toEmail,
+    subject: `New Contact from ${name}`,
+    text: `Name: ${name}\nEmail: ${email}\n\n${message}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+        <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <h2 style="color: #16a34a; margin-bottom: 20px; text-align: center;">New Contact Form Submission</h2>
+          
+          <div style="margin-bottom: 20px;">
+            <h3 style="color: #333; margin-bottom: 10px;">Contact Details:</h3>
+            <p style="margin: 5px 0;"><strong>Name:</strong> ${name}</p>
+            <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+          </div>
+          
+          <div style="margin-bottom: 20px;">
+            <h3 style="color: #333; margin-bottom: 10px;">Message:</h3>
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #16a34a;">
+              <p style="margin: 0; white-space: pre-wrap;">${message}</p>
+            </div>
+          </div>
+          
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center;">
+            <p style="color: #666; font-size: 14px; margin: 0;">
+              This message was sent from the MTV Tech Solutions contact form.
+            </p>
+            <p style="color: #666; font-size: 14px; margin: 5px 0 0 0;">
+              Reply directly to: ${email}
+            </p>
+          </div>
+        </div>
+      </div>
+    `
+  });
+}
+
+async function sendEmailWithGmail(name: string, email: string, message: string): Promise<void> {
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER!,
+      pass: process.env.EMAIL_PASS!,
+    },
+  });
+
+  const toEmail = process.env.CONTACT_TO || 'mtvrentals845@gmail.com';
+
+  await transporter.sendMail({
+    from: `"MTV Tech Solutions" <${process.env.EMAIL_USER}>`,
+    to: toEmail,
+    subject: `New Contact from ${name}`,
+    text: `Name: ${name}\nEmail: ${email}\n\n${message}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+        <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <h2 style="color: #16a34a; margin-bottom: 20px; text-align: center;">New Contact Form Submission</h2>
+          
+          <div style="margin-bottom: 20px;">
+            <h3 style="color: #333; margin-bottom: 10px;">Contact Details:</h3>
+            <p style="margin: 5px 0;"><strong>Name:</strong> ${name}</p>
+            <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+          </div>
+          
+          <div style="margin-bottom: 20px;">
+            <h3 style="color: #333; margin-bottom: 10px;">Message:</h3>
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #16a34a;">
+              <p style="margin: 0; white-space: pre-wrap;">${message}</p>
+            </div>
+          </div>
+          
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center;">
+            <p style="color: #666; font-size: 14px; margin: 0;">
+              This message was sent from the MTV Tech Solutions contact form.
+            </p>
+            <p style="color: #666; font-size: 14px; margin: 5px 0 0 0;">
+              Reply directly to: ${email}
+            </p>
+          </div>
+        </div>
+      </div>
+    `
+  });
 }
 
 export default async function handler(
@@ -19,192 +149,117 @@ export default async function handler(
   // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({
-      success: false,
-      message: 'Method not allowed'
+      ok: false,
+      error: 'Method not allowed. Only POST requests are accepted.'
     });
   }
 
   try {
-    const { name, email, message }: ContactFormData = req.body;
+    // Rate limiting
+    const clientIP = getClientIP(req);
+    if (!checkRateLimit(clientIP)) {
+      console.error(JSON.stringify({ 
+        scope: 'contact.rateLimit', 
+        ip: clientIP, 
+        timestamp: new Date().toISOString() 
+      }, null, 2));
+      
+      return res.status(429).json({
+        ok: false,
+        error: 'Too many requests. Please wait before sending another message.'
+      });
+    }
 
-    // Validate required fields
-    if (!name || !email || !message) {
+    // Validate request body with Zod
+    const validationResult = BodySchema.safeParse(req.body);
+    if (!validationResult.success) {
+      const errors = validationResult.error?.issues?.map(err => err.message).join(', ') || 'Invalid input';
+      
+      console.error(JSON.stringify({ 
+        scope: 'contact.validation', 
+        errors: validationResult.error?.issues || [],
+        body: req.body,
+        timestamp: new Date().toISOString() 
+      }, null, 2));
+      
       return res.status(400).json({
-        success: false,
-        message: 'All fields are required'
+        ok: false,
+        error: `Please check your input: ${errors}`
       });
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid email format'
-      });
-    }
+    const { name, email, message } = validationResult.data;
 
-    // Check if email credentials are configured
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      console.error('Email credentials not configured');
-      return res.status(500).json({
-        success: false,
-        message: 'Email service not configured. Please contact us directly at mtvrentals845@gmail.com'
-      });
-    }
-
-    // Create transporter
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+    // Determine and use email transport
+    try {
+      if (process.env.RESEND_API_KEY) {
+        // Use Resend as primary transport
+        await sendEmailWithResend(name, email, message);
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log(JSON.stringify({ 
+            scope: 'contact.success', 
+            transport: 'resend',
+            from: email,
+            timestamp: new Date().toISOString() 
+          }, null, 2));
+        }
+        
+      } else if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+        // Use Gmail SMTP as fallback
+        await sendEmailWithGmail(name, email, message);
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log(JSON.stringify({ 
+            scope: 'contact.success', 
+            transport: 'gmail',
+            from: email,
+            timestamp: new Date().toISOString() 
+          }, null, 2));
+        }
+        
+      } else {
+        // No email transport configured
+        console.error(JSON.stringify({ 
+          scope: 'contact.config', 
+          error: 'No email transport configured',
+          timestamp: new Date().toISOString() 
+        }, null, 2));
+        
+        return res.status(500).json({
+          ok: false,
+          error: 'Email service is not configured. Please contact us directly at mtvrentals845@gmail.com'
+        });
       }
-    });
 
-    // Email content
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: 'mtvrentals845@gmail.com',
-      subject: `New Contact Form Submission from ${name}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
-          <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <h2 style="color: #16a34a; margin-bottom: 20px; text-align: center;">New Contact Form Submission</h2>
-            
-            <div style="margin-bottom: 20px;">
-              <h3 style="color: #333; margin-bottom: 10px;">Contact Details:</h3>
-              <p style="margin: 5px 0;"><strong>Name:</strong> ${name}</p>
-              <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
-            </div>
-            
-            <div style="margin-bottom: 20px;">
-              <h3 style="color: #333; margin-bottom: 10px;">Message:</h3>
-              <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #16a34a;">
-                <p style="margin: 0; white-space: pre-wrap;">${message}</p>
-              </div>
-            </div>
-            
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center;">
-              <p style="color: #666; font-size: 14px; margin: 0;">
-                This message was sent from the MTV Tech Solutions contact form.
-              </p>
-              <p style="color: #666; font-size: 14px; margin: 5px 0 0 0;">
-                Reply directly to: ${email}
-              </p>
-            </div>
-          </div>
-        </div>
-      `,
-      text: `
-        New Contact Form Submission
-        
-        Name: ${name}
-        Email: ${email}
-        
-        Message:
-        ${message}
-        
-        ---
-        This message was sent from the MTV Tech Solutions contact form.
-        Reply directly to: ${email}
-      `
-    };
+      return res.status(200).json({
+        ok: true,
+        message: 'Message sent successfully! We will get back to you soon.'
+      });
 
-    // Send email
-    await transporter.sendMail(mailOptions);
-
-    // Send confirmation email to the user
-    const confirmationMailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: 'Thank you for contacting MTV Tech Solutions',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
-          <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <div style="text-align: center; margin-bottom: 30px;">
-              <h2 style="color: #16a34a; margin-bottom: 10px;">MTV Tech Solutions</h2>
-              <p style="color: #666; margin: 0;">AI-Powered Technology Solutions</p>
-            </div>
-            
-            <h3 style="color: #333; margin-bottom: 20px;">Thank you for contacting us!</h3>
-            
-            <p style="color: #333; line-height: 1.6; margin-bottom: 20px;">
-              Hi ${name},
-            </p>
-            
-            <p style="color: #333; line-height: 1.6; margin-bottom: 20px;">
-              Thank you for reaching out to MTV Tech Solutions. We have received your message and will get back to you within 2-4 hours during business hours.
-            </p>
-            
-            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; border-left: 4px solid #16a34a; margin-bottom: 20px;">
-              <h4 style="color: #333; margin-bottom: 10px;">Your Message:</h4>
-              <p style="color: #666; margin: 0; white-space: pre-wrap;">${message}</p>
-            </div>
-            
-            <p style="color: #333; line-height: 1.6; margin-bottom: 20px;">
-              In the meantime, feel free to explore our services:
-            </p>
-            
-            <ul style="color: #333; line-height: 1.6; margin-bottom: 30px;">
-              <li>Computer Repair & Hardware Diagnostics</li>
-              <li>24/7 Technical Support</li>
-              <li>Cybersecurity & Threat Protection</li>
-              <li>Web Design & Development</li>
-            </ul>
-            
-            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-              <p style="color: #666; font-size: 14px; margin: 0;">
-                Best regards,<br>
-                The MTV Tech Solutions Team
-              </p>
-              <p style="color: #666; font-size: 14px; margin: 10px 0 0 0;">
-                Email: mtvrentals845@gmail.com<br>
-                Available 24/7 for emergency support
-              </p>
-            </div>
-          </div>
-        </div>
-      `,
-      text: `
-        MTV Tech Solutions - AI-Powered Technology Solutions
-        
-        Thank you for contacting us!
-        
-        Hi ${name},
-        
-        Thank you for reaching out to MTV Tech Solutions. We have received your message and will get back to you within 2-4 hours during business hours.
-        
-        Your Message:
-        ${message}
-        
-        In the meantime, feel free to explore our services:
-        - Computer Repair & Hardware Diagnostics
-        - 24/7 Technical Support
-        - Cybersecurity & Threat Protection
-        - Web Design & Development
-        
-        Best regards,
-        The MTV Tech Solutions Team
-        
-        Email: mtvrentals845@gmail.com
-        Available 24/7 for emergency support
-      `
-    };
-
-    // Send confirmation email
-    await transporter.sendMail(confirmationMailOptions);
-
-    return res.status(200).json({
-      success: true,
-      message: 'Message sent successfully'
-    });
+    } catch (transportError) {
+      console.error(JSON.stringify({ 
+        scope: 'contact.send', 
+        err: (transportError as Error).message,
+        timestamp: new Date().toISOString() 
+      }, null, 2));
+      
+      return res.status(500).json({
+        ok: false,
+        error: 'Failed to send message. Please try again or contact us directly at mtvrentals845@gmail.com'
+      });
+    }
 
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error(JSON.stringify({ 
+      scope: 'contact.general', 
+      err: (error as Error).message,
+      timestamp: new Date().toISOString() 
+    }, null, 2));
+    
     return res.status(500).json({
-      success: false,
-      message: 'Failed to send message. Please try again or contact us directly at mtvrentals845@gmail.com'
+      ok: false,
+      error: 'An unexpected error occurred. Please try again later.'
     });
   }
 }

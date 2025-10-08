@@ -14,14 +14,19 @@
   },
   "dependencies": {
     "@stripe/stripe-js": "^7.9.0",
+    "@tailwindcss/typography": "^0.5.19",
     "@types/nodemailer": "^6.4.0",
+    "framer-motion": "^12.23.22",
     "lucide-react": "^0.544.0",
     "micro": "^10.0.1",
     "next": "^14.0.0",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^6.9.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "stripe": "^18.5.0"
+    "resend": "^6.1.2",
+    "stripe": "^18.5.0",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

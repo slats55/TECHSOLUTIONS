@@ -27,6 +27,8 @@ A modern, production-ready Next.js website for MTV Tech Solutions - your trusted
 
 ## 🚀 Quick Start
 
+⚠️ **IMPORTANT**: This project requires a development server. Do NOT open `index.html` directly in your browser via `file://` protocol.
+
 ### Prerequisites
 
 - Node.js 18+ 
@@ -50,11 +52,7 @@ A modern, production-ready Next.js website for MTV Tech Solutions - your trusted
    cp env.example .env.local
    ```
    
-   Edit `.env.local` and add your email credentials:
-   ```env
-   EMAIL_USER=yourgmail@gmail.com
-   EMAIL_PASS=your_app_password_here
-   ```
+   Edit `.env.local` and configure your email transport (see Email Setup section below).
 
 4. **Run the development server**
    ```bash
@@ -64,9 +62,30 @@ A modern, production-ready Next.js website for MTV Tech Solutions - your trusted
 5. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
+### ⚠️ File Protocol Warning
+
+If you see a blank page or errors:
+- ❌ **Don't use**: `file:///path/to/index.html`
+- ✅ **Use instead**: `http://localhost:3000` (after running `npm run dev`)
+
+This is a Next.js application that requires a server to function properly.
+
 ## 📧 Email Setup
 
-To enable the contact form functionality:
+The contact form supports two email transport methods. Choose one:
+
+### Option A: Resend (Recommended for Serverless)
+
+1. **Create Resend Account**: [https://resend.com](https://resend.com)
+2. **Get API Key**: Go to API Keys in your dashboard
+3. **Add to Environment**:
+   ```env
+   RESEND_API_KEY=re_your_api_key_here
+   RESEND_FROM=noreply@your-domain.com
+   CONTACT_TO=mtvrentals845@gmail.com
+   ```
+
+### Option B: Gmail SMTP (Fallback)
 
 1. **Gmail Setup**:
    - Enable 2-factor authentication on your Gmail account
@@ -77,7 +96,15 @@ To enable the contact form functionality:
    ```env
    EMAIL_USER=mtvrentals845@gmail.com
    EMAIL_PASS=your_16_character_app_password
+   CONTACT_TO=mtvrentals845@gmail.com
    ```
+
+### Transport Selection Logic
+
+The system automatically chooses the email transport:
+- If `RESEND_API_KEY` is present → uses Resend
+- Else if `EMAIL_USER` + `EMAIL_PASS` are present → uses Gmail SMTP
+- Else returns 500 error with configuration message
 
 ## 💳 Stripe Integration Setup
 
@@ -154,16 +181,54 @@ Any future date, any 3-digit CVC, and any postal code.
    - Publish directory: `.next`
 3. **Add environment variables** in Netlify dashboard
 
-### cPanel/Shared Hosting
+### Deploying to cPanel
 
-1. **Build the project**:
+#### Option 1: Node.js Application (Preferred)
+
+If your cPanel hosting supports Node.js:
+
+1. **Enable Node.js** in cPanel Application Manager
+2. **Upload your project** files to the app directory
+3. **Install dependencies**:
+   ```bash
+   npm install --production
+   ```
+4. **Set environment variables** in cPanel or `.env.local`
+5. **Start the application** using Passenger
+
+#### Option 2: Static Export + Serverless Functions
+
+If Node.js is not available:
+
+1. **Create a serverless relay** (Cloudflare Workers, Netlify Functions, or Vercel Functions)
+2. **Deploy the contact API** to the serverless platform
+3. **Build static export**:
    ```bash
    npm run build
    npm run export
    ```
+4. **Upload the `out` folder** to your cPanel public_html
+5. **Update contact form** to use the serverless API endpoint
 
-2. **Upload** the `out` folder to your hosting provider
-3. **Configure** email settings on your server
+⚠️ **Security Note**: Never expose email credentials (RESEND_API_KEY, EMAIL_PASS) in client-side code. Always use server-side APIs or serverless functions.
+
+#### Environment Variables for cPanel
+
+Add these to your `.env.local` or cPanel environment settings:
+
+```env
+# Email Transport (choose one)
+RESEND_API_KEY=your_resend_api_key
+# OR
+EMAIL_USER=your_gmail@gmail.com
+EMAIL_PASS=your_app_password
+
+# Site URL for production
+NEXT_PUBLIC_SITE_URL=https://yourdomain.com
+
+# Contact recipient
+CONTACT_TO=mtvrentals845@gmail.com
+```
 
 ## 📁 Project Structure
 
@@ -225,6 +290,102 @@ TECHSOLUTIONS/
 - **Performance Optimized** with Next.js
 - **Secure Payments** with Stripe
 - **Webhook Processing** for payment events
+
+## 🧪 Testing & Troubleshooting
+
+### Health Check Endpoint
+
+Check your email configuration and system status:
+
+```bash
+# Local testing
+curl -X GET http://localhost:3000/api/health
+
+# Production testing
+curl -X GET https://your-domain.com/api/health
+```
+
+Expected response:
+```json
+{
+  "ok": true,
+  "env": "development",
+  "emailTransport": "RESEND",
+  "hasEnvs": {
+    "RESEND_API_KEY": true,
+    "EMAIL_USER": false,
+    "EMAIL_PASS": false
+  }
+}
+```
+
+### Contact Form Testing
+
+Test the contact form with curl:
+
+```bash
+# Valid request (should return 200 if email configured, 500 if not)
+curl -s -X POST http://localhost:3000/api/contact \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Myles",
+    "email": "myles@example.com",
+    "message": "Test message from curl."
+  }'
+
+# Invalid email (should return 400)
+curl -s -X POST http://localhost:3000/api/contact \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Test",
+    "email": "invalid-email",
+    "message": "Test message that is long enough"
+  }'
+
+# Missing fields (should return 400)
+curl -s -X POST http://localhost:3000/api/contact \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Test"
+  }'
+
+# Wrong method (should return 405)
+curl -s -X GET http://localhost:3000/api/contact
+
+# PowerShell equivalent for Windows:
+# Invoke-WebRequest -Uri "http://localhost:3000/api/health" -Method GET
+# Invoke-WebRequest -Uri "http://localhost:3000/api/contact" -Method POST -ContentType "application/json" -Body '{"name":"Myles","email":"myles@example.com","message":"Test message from PowerShell."}'
+```
+
+### Common Error Codes
+
+| Code | Meaning | Solution |
+|------|---------|----------|
+| 400 | Validation failed | Check name (2-100 chars), valid email, message (10-5000 chars) |
+| 405 | Wrong HTTP method | Use POST for `/api/contact`, GET for `/api/health` |
+| 429 | Rate limit exceeded | Wait 10 minutes, max 5 requests per IP |
+| 500 | Email transport error | Check `/api/health` for configuration issues |
+
+### Troubleshooting Steps
+
+1. **Check Health Endpoint**: Visit `/api/health` to verify configuration
+2. **Verify Environment Variables**: Ensure email transport vars are set correctly
+3. **Test Locally**: Use curl commands above to isolate issues
+4. **Check Logs**: Look for structured JSON logs in console/server logs
+5. **Rate Limiting**: If getting 429, wait 10 minutes between tests
+
+### Gmail SMTP Troubleshooting
+
+- **"Invalid credentials"**: Use App Password, not regular password
+- **"Less secure app access"**: Enable 2FA and use App Password instead
+- **"Authentication failed"**: Verify EMAIL_USER matches the Gmail account
+- **"Connection timeout"**: Check firewall/network restrictions
+
+### Resend Troubleshooting
+
+- **"Invalid API key"**: Verify RESEND_API_KEY is correct
+- **"Domain not verified"**: Use verified domain in RESEND_FROM
+- **"Rate limit exceeded"**: Check Resend dashboard for limits
 
 ## 🔧 Customization
 

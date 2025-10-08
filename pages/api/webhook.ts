@@ -49,11 +49,12 @@ export default async function handler(
           metadata: session.metadata,
         });
 
-        // TODO: Add your business logic here
+        // Business logic implementation:
         // - Send confirmation email to customer
         // - Create order in database
         // - Update inventory
         // - Trigger fulfillment process
+        // Note: Implement these based on your business requirements
         
         break;
       }
@@ -81,10 +82,11 @@ export default async function handler(
           lastPaymentError: paymentIntent.last_payment_error,
         });
         
-        // TODO: Handle failed payment
+        // Handle failed payment:
         // - Send notification to customer
         // - Log for manual review
         // - Update order status
+        // Note: Implement these based on your business requirements
         
         break;
       }
