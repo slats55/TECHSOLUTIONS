@@ -1,6 +1,7 @@
-import { z } from 'zod';
-import type { NextApiRequest, NextApiResponse } from 'next';
-import nodemailer from 'nodemailer';
+import { z } from "zod";
+import type { NextApiRequest, NextApiResponse } from "next";
+import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
 // Zod schema for request validation
 const BodySchema = z.object({
@@ -13,6 +14,7 @@ interface ApiResponse {
   ok: boolean;
   message?: string;
   error?: string;
+  code?: string;
 }
 
 // Simple in-memory rate limiter for serverless environments
@@ -49,96 +51,43 @@ function getClientIP(req: NextApiRequest): string {
   return ip || 'unknown';
 }
 
+// Structured logging helper
+function logError(scope: string, error: any, additionalData?: any) {
+  console.log(JSON.stringify({
+    scope,
+    error: error.message || error,
+    timestamp: new Date().toISOString(),
+    ...additionalData
+  }));
+}
+
+// Send email via Resend
 async function sendEmailWithResend(name: string, email: string, message: string): Promise<void> {
-  // Dynamic import to avoid issues if resend is not installed
-  const { Resend } = await import('resend');
   const resend = new Resend(process.env.RESEND_API_KEY!);
   
-  const fromEmail = process.env.RESEND_FROM || 'noreply@your-domain.com';
-  const toEmail = process.env.CONTACT_TO || 'mtvrentals845@gmail.com';
-
   await resend.emails.send({
-    from: fromEmail,
-    to: toEmail,
+    from: process.env.RESEND_FROM || "noreply@mtvtechsolutions.net",
+    to: process.env.CONTACT_TO || "support@mtvtechsolutions.net",
     subject: `New Contact from ${name}`,
     text: `Name: ${name}\nEmail: ${email}\n\n${message}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
-        <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-          <h2 style="color: #16a34a; margin-bottom: 20px; text-align: center;">New Contact Form Submission</h2>
-          
-          <div style="margin-bottom: 20px;">
-            <h3 style="color: #333; margin-bottom: 10px;">Contact Details:</h3>
-            <p style="margin: 5px 0;"><strong>Name:</strong> ${name}</p>
-            <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
-          </div>
-          
-          <div style="margin-bottom: 20px;">
-            <h3 style="color: #333; margin-bottom: 10px;">Message:</h3>
-            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #16a34a;">
-              <p style="margin: 0; white-space: pre-wrap;">${message}</p>
-            </div>
-          </div>
-          
-          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center;">
-            <p style="color: #666; font-size: 14px; margin: 0;">
-              This message was sent from the MTV Tech Solutions contact form.
-            </p>
-            <p style="color: #666; font-size: 14px; margin: 5px 0 0 0;">
-              Reply directly to: ${email}
-            </p>
-          </div>
-        </div>
-      </div>
-    `
   });
 }
 
+// Send email via Gmail SMTP
 async function sendEmailWithGmail(name: string, email: string, message: string): Promise<void> {
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    service: "gmail",
     auth: {
-      user: process.env.EMAIL_USER!,
-      pass: process.env.EMAIL_PASS!,
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
     },
   });
 
-  const toEmail = process.env.CONTACT_TO || 'mtvrentals845@gmail.com';
-
   await transporter.sendMail({
     from: `"MTV Tech Solutions" <${process.env.EMAIL_USER}>`,
-    to: toEmail,
+    to: process.env.CONTACT_TO || "support@mtvtechsolutions.net",
     subject: `New Contact from ${name}`,
     text: `Name: ${name}\nEmail: ${email}\n\n${message}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
-        <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-          <h2 style="color: #16a34a; margin-bottom: 20px; text-align: center;">New Contact Form Submission</h2>
-          
-          <div style="margin-bottom: 20px;">
-            <h3 style="color: #333; margin-bottom: 10px;">Contact Details:</h3>
-            <p style="margin: 5px 0;"><strong>Name:</strong> ${name}</p>
-            <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
-          </div>
-          
-          <div style="margin-bottom: 20px;">
-            <h3 style="color: #333; margin-bottom: 10px;">Message:</h3>
-            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #16a34a;">
-              <p style="margin: 0; white-space: pre-wrap;">${message}</p>
-            </div>
-          </div>
-          
-          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center;">
-            <p style="color: #666; font-size: 14px; margin: 0;">
-              This message was sent from the MTV Tech Solutions contact form.
-            </p>
-            <p style="color: #666; font-size: 14px; margin: 5px 0 0 0;">
-              Reply directly to: ${email}
-            </p>
-          </div>
-        </div>
-      </div>
-    `
   });
 }
 
@@ -146,7 +95,6 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ApiResponse>
 ) {
-  // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({
       ok: false,
@@ -158,12 +106,7 @@ export default async function handler(
     // Rate limiting
     const clientIP = getClientIP(req);
     if (!checkRateLimit(clientIP)) {
-      console.error(JSON.stringify({ 
-        scope: 'contact.rateLimit', 
-        ip: clientIP, 
-        timestamp: new Date().toISOString() 
-      }, null, 2));
-      
+      logError('contact.ratelimit', { message: 'Rate limit exceeded' }, { clientIP });
       return res.status(429).json({
         ok: false,
         error: 'Too many requests. Please wait before sending another message.'
@@ -173,15 +116,11 @@ export default async function handler(
     // Validate request body with Zod
     const validationResult = BodySchema.safeParse(req.body);
     if (!validationResult.success) {
-      const errors = validationResult.error?.issues?.map(err => err.message).join(', ') || 'Invalid input';
-      
-      console.error(JSON.stringify({ 
-        scope: 'contact.validation', 
-        errors: validationResult.error?.issues || [],
-        body: req.body,
-        timestamp: new Date().toISOString() 
-      }, null, 2));
-      
+      const errors = validationResult.error.issues.map(err => err.message).join(', ');
+      logError('contact.validation', { message: 'Validation failed' }, { 
+        errors: validationResult.error.issues,
+        body: req.body 
+      });
       return res.status(400).json({
         ok: false,
         error: `Please check your input: ${errors}`
@@ -193,70 +132,43 @@ export default async function handler(
     // Determine and use email transport
     try {
       if (process.env.RESEND_API_KEY) {
-        // Use Resend as primary transport
         await sendEmailWithResend(name, email, message);
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log(JSON.stringify({ 
-            scope: 'contact.success', 
-            transport: 'resend',
-            from: email,
-            timestamp: new Date().toISOString() 
-          }, null, 2));
-        }
-        
+        logError('contact.send', { message: 'Email sent via Resend' }, { 
+          transport: 'resend',
+          to: process.env.CONTACT_TO || "support@mtvtechsolutions.net"
+        });
       } else if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-        // Use Gmail SMTP as fallback
         await sendEmailWithGmail(name, email, message);
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log(JSON.stringify({ 
-            scope: 'contact.success', 
-            transport: 'gmail',
-            from: email,
-            timestamp: new Date().toISOString() 
-          }, null, 2));
-        }
-        
+        logError('contact.send', { message: 'Email sent via Gmail' }, { 
+          transport: 'gmail',
+          to: process.env.CONTACT_TO || "support@mtvtechsolutions.net"
+        });
       } else {
-        // No email transport configured
-        console.error(JSON.stringify({ 
-          scope: 'contact.config', 
-          error: 'No email transport configured',
-          timestamp: new Date().toISOString() 
-        }, null, 2));
-        
+        logError('contact.config', { message: 'No email transport configured' });
         return res.status(500).json({
           ok: false,
-          error: 'Email service is not configured. Please contact us directly at mtvrentals845@gmail.com'
+          error: 'Email service is being configured. You can reach us at support@mtvtechsolutions.net.',
+          code: 'EMAIL_NOT_CONFIGURED'
         });
       }
 
       return res.status(200).json({
         ok: true,
-        message: 'Message sent successfully! We will get back to you soon.'
+        message: 'Thank you! Your message has been sent successfully.'
       });
 
     } catch (transportError) {
-      console.error(JSON.stringify({ 
-        scope: 'contact.send', 
-        err: (transportError as Error).message,
-        timestamp: new Date().toISOString() 
-      }, null, 2));
-      
+      logError('contact.send', transportError, { 
+        transport: process.env.RESEND_API_KEY ? 'resend' : 'gmail'
+      });
       return res.status(500).json({
         ok: false,
-        error: 'Failed to send message. Please try again or contact us directly at mtvrentals845@gmail.com'
+        error: 'Failed to send message. Please try again or contact us directly at support@mtvtechsolutions.net.'
       });
     }
 
   } catch (error) {
-    console.error(JSON.stringify({ 
-      scope: 'contact.general', 
-      err: (error as Error).message,
-      timestamp: new Date().toISOString() 
-    }, null, 2));
-    
+    logError('contact.general', error);
     return res.status(500).json({
       ok: false,
       error: 'An unexpected error occurred. Please try again later.'

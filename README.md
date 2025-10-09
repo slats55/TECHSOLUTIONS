@@ -25,7 +25,7 @@ A modern, production-ready Next.js website for MTV Tech Solutions - your trusted
 - **Accessibility**: WCAG compliant with semantic HTML
 - **Performance**: Optimized for speed and SEO
 
-## 🚀 Quick Start
+## 🚀 Run Locally
 
 ⚠️ **IMPORTANT**: This project requires a development server. Do NOT open `index.html` directly in your browser via `file://` protocol.
 
@@ -34,18 +34,36 @@ A modern, production-ready Next.js website for MTV Tech Solutions - your trusted
 - Node.js 18+ 
 - npm 8+
 
-### Installation
+### Quick Setup
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/slats55/TECHSOLUTIONS.git
-   cd TECHSOLUTIONS
-   ```
-
-2. **Install dependencies**
+1. **Install dependencies**
    ```bash
    npm install
    ```
+
+2. **Start development server**
+   ```bash
+   npm run dev
+   ```
+
+3. **Open in browser**
+   - Navigate to: http://localhost:3000 (NOT file://)
+   - Verify API health: http://localhost:3000/api/health
+
+4. **Test contact form**
+   - Submit the contact form (will show "Email service is being configured" if no email transport is set up)
+   - This is expected behavior for localhost without email credentials
+
+5. **Test Stripe webhook (optional)**
+   - If you have Stripe test keys, run: `stripe listen --forward-to localhost:3000/api/webhook`
+   - The webhook endpoint will return 200 even without Stripe configuration
+
+6. **Run smoke tests**
+   ```bash
+   npm run test:curl
+   ```
+
+### Environment Setup (Optional)
 
 3. **Set up environment variables**
    ```bash
@@ -70,22 +88,23 @@ If you see a blank page or errors:
 
 This is a Next.js application that requires a server to function properly.
 
-## 📧 Email Setup
+## 📧 Contact Email Setup
 
-The contact form supports two email transport methods. Choose one:
+**Recipient**: support@mtvtechsolutions.net
 
-### Option A: Resend (Recommended for Serverless)
+### Primary Transport: Resend
 
 1. **Create Resend Account**: [https://resend.com](https://resend.com)
-2. **Get API Key**: Go to API Keys in your dashboard
-3. **Add to Environment**:
+2. **Verify Domain**: Add and verify `mtvtechsolutions.net` domain
+3. **Get API Key**: Go to API Keys in your dashboard
+4. **Set Environment Variables**:
    ```env
    RESEND_API_KEY=re_your_api_key_here
-   RESEND_FROM=noreply@your-domain.com
-   CONTACT_TO=mtvrentals845@gmail.com
+   RESEND_FROM=noreply@mtvtechsolutions.net
+   CONTACT_TO=support@mtvtechsolutions.net
    ```
 
-### Option B: Gmail SMTP (Fallback)
+### Fallback Transport: Gmail
 
 1. **Gmail Setup**:
    - Enable 2-factor authentication on your Gmail account
@@ -94,10 +113,22 @@ The contact form supports two email transport methods. Choose one:
 
 2. **Environment Variables**:
    ```env
-   EMAIL_USER=mtvrentals845@gmail.com
+   EMAIL_USER=yourgmail@gmail.com
    EMAIL_PASS=your_16_character_app_password
-   CONTACT_TO=mtvrentals845@gmail.com
+   CONTACT_TO=support@mtvtechsolutions.net
    ```
+
+### Local Testing
+
+```bash
+npm run dev
+curl http://localhost:3000/api/health
+curl -X POST http://localhost:3000/api/contact \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Myles","email":"myles@test.com","message":"Hello from local test"}'
+```
+
+**Expected Result**: 200 OK with `{ "ok": true }`
 
 ### Transport Selection Logic
 

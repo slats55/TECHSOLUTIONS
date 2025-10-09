@@ -49,11 +49,11 @@ export default function Contact() {
         let errorMessage = 'Something went wrong. Please try again.';
         
         if (response.status === 400) {
-          errorMessage = 'Please check your name, email, and message and try again.';
+          errorMessage = 'Please check your name, email, and message.';
         } else if (response.status === 429) {
-          errorMessage = 'Too many requests. Please wait a few minutes before trying again.';
+          errorMessage = 'Too many requests — try again soon.';
         } else if (response.status === 500) {
-          errorMessage = 'Email service is temporarily unavailable — we\'re fixing it.';
+          errorMessage = 'Email service is being configured. You can reach us at support@mtvtechsolutions.net.';
         }
         
         setSubmitStatus({
@@ -65,7 +65,7 @@ export default function Contact() {
       console.error('Error submitting form:', error);
       setSubmitStatus({
         errorCode: 0,
-        message: 'Network error. Please check your connection and try again.'
+        message: 'Network error. Please check your connection and try again, or contact us at support@mtvtechsolutions.net.'
       });
     } finally {
       setIsSubmitting(false);
@@ -77,8 +77,8 @@ export default function Contact() {
       icon: Mail,
       title: 'Email Us',
       description: 'Send us an email anytime',
-      value: 'mtvrentals845@gmail.com',
-      href: 'mailto:mtvrentals845@gmail.com'
+      value: process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'support@mtvtechsolutions.net',
+      href: `mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'support@mtvtechsolutions.net'}`
     },
     {
       icon: Phone,
@@ -195,7 +195,7 @@ export default function Contact() {
                   {submitStatus === 'success' && (
                     <div className="flex items-center space-x-2 text-green-500 bg-green-500/10 p-3 rounded-lg">
                       <CheckCircle className="w-5 h-5" />
-                      <span>Message sent successfully! We'll get back to you soon.</span>
+                      <span>Thank you! Your message has been sent successfully.</span>
                     </div>
                   )}
 

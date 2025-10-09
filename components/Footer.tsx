@@ -85,12 +85,12 @@ const Footer = () => {
                 <Mail className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-muted-foreground text-sm">Email</p>
-                  <a
-                    href="mailto:mtvrentals845@gmail.com"
-                    className="text-foreground hover:text-primary transition-colors duration-200"
-                  >
-                    mtvrentals845@gmail.com
-                  </a>
+                          <a
+                            href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'support@mtvtechsolutions.net'}`}
+                            className="text-foreground hover:text-primary transition-colors duration-200"
+                          >
+                            {process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'support@mtvtechsolutions.net'}
+                          </a>
                 </div>
               </div>
               

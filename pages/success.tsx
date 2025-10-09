@@ -102,11 +102,11 @@ export default function Success() {
                 </p>
                 <div className="space-y-3">
                   <a
-                    href="mailto:mtvrentals845@gmail.com"
+                    href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'support@mtvtechsolutions.net'}`}
                     className="flex items-center text-primary hover:text-primary/80 transition-colors duration-200"
                   >
                     <Mail className="w-4 h-4 mr-2" />
-                    mtvrentals845@gmail.com
+                    {process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'support@mtvtechsolutions.net'}
                   </a>
                   <p className="text-sm text-muted-foreground">
                     📞 24/7 Emergency Support Available

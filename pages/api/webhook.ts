@@ -8,10 +8,6 @@ export const config = {
   },
 };
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: '2025-08-27.basil',
-});
-
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -19,6 +15,16 @@ export default async function handler(
   if (req.method !== 'POST') {
     return res.status(405).end('Method not allowed');
   }
+
+  // If Stripe is not configured, return 200 no-op
+  if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
+    console.log('Stripe webhook received but not configured - returning 200');
+    return res.status(200).json({ received: true, configured: false });
+  }
+
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2025-08-27.basil',
+  });
 
   const buf = await buffer(req);
   const sig = req.headers['stripe-signature'] as string;
@@ -29,7 +35,7 @@ export default async function handler(
     event = stripe.webhooks.constructEvent(
       buf.toString(),
       sig,
-      process.env.STRIPE_WEBHOOK_SECRET as string
+      process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err: any) {
     console.error('Webhook signature verification failed:', err.message);
