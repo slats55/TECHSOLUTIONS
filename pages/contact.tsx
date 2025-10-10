@@ -28,7 +28,9 @@ export default function Contact() {
 
     try {
       // Build proper API URL for both local and production
-      const base = typeof window !== "undefined" ? window.location.origin : process.env.NEXT_PUBLIC_SITE_URL || '';
+      const base = typeof window !== "undefined"
+        ? window.location.origin
+        : process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
       const apiUrl = `${base}/api/contact`;
       
       const response = await fetch(apiUrl, {

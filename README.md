@@ -258,7 +258,7 @@ EMAIL_PASS=your_app_password
 NEXT_PUBLIC_SITE_URL=https://yourdomain.com
 
 # Contact recipient
-CONTACT_TO=mtvrentals845@gmail.com
+CONTACT_TO=support@mtvtechsolutions.net
 ```
 
 ## 📁 Project Structure
@@ -443,7 +443,7 @@ colors: {
 ## 📞 Support
 
 For technical support or questions:
-- **Email**: mtvrentals845@gmail.com
+- **Email**: support@mtvtechsolutions.net
 - **Available**: 24/7 emergency support
 - **Response Time**: 2-4 hours during business hours
 
